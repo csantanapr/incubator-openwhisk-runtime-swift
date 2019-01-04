@@ -30,12 +30,18 @@ package_swift = """// swift-tools-version:4.2
 import PackageDescription
 
 let package = Package(
-    name: "exec",
-    dependencies: [],
+    name: "Action",
+    products: [
+      .executable(
+        name: "Action",
+        targets:  ["Action"]
+      )
+    ],
     targets: [
       .target(
-        name: "exec",
-        dependencies: [])
+        name: "Action",
+        path: "."
+      )
     ]
 )
 """
@@ -52,30 +58,37 @@ def sources(launcher, source_dir, main):
             s.write(package_swift)
 
     # create Sources/Action dir
-    actiondir = "%s/Sources/exec" % source_dir
+    actiondir = "%s/Sources" % source_dir
     if not os.path.isdir(actiondir):
         os.makedirs(actiondir, mode=0o755)
 
-    # copy the exec to exec.go
+    # copy the single source file from exec to exec.swift
     # also check if it has a main in it
-    src = "%s/exec" % source_dir
-    dst = "%s/exec.swift" % actiondir
+    src = os.path.abspath("_Whisk.swift")
+    dst = "%s/_Whisk.swift" % actiondir
     if os.path.isfile(src):
         with codecs.open(src, 'r', 'utf-8') as s:
             with codecs.open(dst, 'w', 'utf-8') as d:
                 body = s.read()
                 d.write(body)
 
+    # Copy Whisk SDK
+
     # copy the launcher fixing the main
     dst = "%s/main.swift" % actiondir
-    with codecs.open(dst, 'w', 'utf-8') as d:
+    with codecs.open(dst, 'a', 'utf-8') as d:
         with codecs.open(launcher, 'r', 'utf-8') as e:
             code = e.read()
-            code += "_run_main(mainFunction: %s)\n" % main
+            code += "while let inputStr: String = readLine() {\n"
+            code += "  let json = inputStr.data(using: .utf8, allowLossyConversion: true)!\n"
+            code += "  let parsed = try JSONSerialization.jsonObject(with: json, options: []) as! [String: Any]\n"
+            code += "  let jsonData = try JSONSerialization.data(withJSONObject: parsed[\"value\"] as Any, options: [])\n"
+            code += "  _run_main(mainFunction: %s, json: jsonData)\n" % main
+            code += "} \n"
             d.write(code)
 
 def swift_build(dir, extra_args=[]):
-    base_args =  ["swift", "build", "--package-path", dir,  "-c", "release"]
+    base_args =  ["swift", "build", "-c", "release"]
     # compile...
     env = {
       "PATH": os.environ["PATH"]
@@ -103,13 +116,7 @@ def build(source_dir, target_file):
         print(output.getvalue())
         return
 
-    r, o, e = swift_build(source_dir, ["--show-bin-path"])
-    if e: eprint(e)
-    if r != 0:
-        print(output.getvalue())
-        return
-
-    bin_file = "%s/exec" % o.strip()
+    bin_file = "%s/.build/release/Action" % source_dir
     os.rename(bin_file, target_file)
     if not os.path.isfile(target_file):
         eprint("failed %s -> %s" % (bin_file, target_file))

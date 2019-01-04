@@ -1,3 +1,6 @@
+// swift-tools-version:4.2
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,10 +18,20 @@
  * limitations under the License.
  */
 
-func main(args: [String:Any]) -> [String:Any] {
-    if let name = args["name"] as? String {
-        return [ "greeting" : "Hello \(name)!" ]
-    } else {
-        return [ "greeting" : "Hello swif4.2!" ]
-    }
-}
+import PackageDescription
+
+let package = Package(
+    name: "Action",
+    products: [
+      .executable(
+        name: "Action",
+        targets:  ["Action"]
+      )
+    ],
+    targets: [
+      .target(
+        name: "Action",
+        path: "."
+      )
+    ]
+)
