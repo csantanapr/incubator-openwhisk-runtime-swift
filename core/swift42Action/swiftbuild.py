@@ -89,6 +89,11 @@ def sources(launcher, source_dir, main):
             code += "while let inputStr: String = readLine() {\n"
             code += "  let json = inputStr.data(using: .utf8, allowLossyConversion: true)!\n"
             code += "  let parsed = try JSONSerialization.jsonObject(with: json, options: []) as! [String: Any]\n"
+            code += "  for (key, value) in parsed {\n"
+            code += "    if key != \"value\" {\n"
+            code += "      setenv(\"__OW_\\(key.uppercased())\",value as! String,1)\n"
+            code += "    }\n"
+            code += "  }\n"
             code += "  let jsonData = try JSONSerialization.data(withJSONObject: parsed[\"value\"] as Any, options: [])\n"
             code += "  _run_main(mainFunction: %s, json: jsonData)\n" % main
             code += "} \n"
