@@ -62,16 +62,6 @@ def sources(launcher, source_dir, main):
     if not os.path.isdir(actiondir):
         os.makedirs(actiondir, mode=0o755)
 
-    # copy the single source file from exec to exec.swift
-    # also check if it has a main in it
-    src = "%s/exec" % source_dir
-    dst = "%s/exec.swift" % actiondir
-    if os.path.isfile(src):
-        with codecs.open(src, 'r', 'utf-8') as s:
-            with codecs.open(dst, 'w', 'utf-8') as d:
-                body = s.read()
-                d.write(body)
-
     # Copy Whisk SDK
     src = os.path.abspath("_Whisk.swift")
     dst = "%s/_Whisk.swift" % actiondir
@@ -81,6 +71,15 @@ def sources(launcher, source_dir, main):
                 body = s.read()
                 d.write(body)
 
+    # copy the single source file from exec to exec.swift
+    # also check if it has a main in it
+    src = "%s/exec" % source_dir
+    dst = "%s/main.swift" % actiondir
+    if os.path.isfile(src):
+        with codecs.open(src, 'r', 'utf-8') as s:
+            with codecs.open(dst, 'a', 'utf-8') as d:
+                body = s.read()
+                d.write(body)
     # copy the launcher fixing the main
     dst = "%s/main.swift" % actiondir
     with codecs.open(dst, 'a', 'utf-8') as d:
