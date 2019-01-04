@@ -28,8 +28,18 @@ func _whisk_print_error(message: String, error: Error?){
     if let error = error {
         errStr = "{\"error\":\"\(message) \(error.localizedDescription)\"\n}"
     }
-    let buf : [UInt8] = Array(errStr.utf8)
+    _whisk_print_buffer(jsonString: errStr)
+}
+func _whisk_print_result(jsonData: Data){
+    let jsonString = String(data: jsonData, encoding: .utf8)!
+    _whisk_print_buffer(jsonString: jsonString)
+}
+func _whisk_print_buffer(jsonString: String){
+    var buf : [UInt8] = Array(jsonString.utf8)
+    buf.append(10)
     write(3, buf, buf.count)
+    fflush(stdout)
+    fflush(stderr)
 }
 
 // snippet of code "injected" (wrapper code for invoking traditional main)
@@ -40,11 +50,7 @@ func _run_main(mainFunction: ([String: Any]) -> [String: Any], json: Data) -> Vo
         if JSONSerialization.isValidJSONObject(result) {
             do {
                 let jsonData = try JSONSerialization.data(withJSONObject: result, options: [])
-                var jsonOut = [UInt8](jsonData)
-                jsonOut.append(10)
-                write(3, jsonOut, jsonOut.count)
-                fflush(stdout)
-                fflush(stderr)
+                 _whisk_print_result(jsonData: jsonData)
             } catch {
                 _whisk_print_error(message: "Failed to encode Dictionary type to JSON string:", error: error)
             }
@@ -72,11 +78,7 @@ func _run_main<In: Decodable, Out: Encodable>(mainFunction: (In, @escaping (Out?
             }
             do {
                 let jsonData = try Whisk.jsonEncoder.encode(out)
-                var jsonOut = [UInt8](jsonData)
-                jsonOut.append(10)
-                write(3, jsonOut, jsonOut.count)
-                fflush(stdout)
-                fflush(stderr)
+                _whisk_print_result(jsonData: jsonData)
             } catch let error as EncodingError {
                 _whisk_print_error(message: "JSONEncoder failed to encode Codable type to JSON string:", error: error)
                 return
@@ -108,11 +110,7 @@ func _run_main<Out: Encodable>(mainFunction: ( @escaping (Out?, Error?) -> Void)
         }
         do {
             let jsonData = try Whisk.jsonEncoder.encode(out)
-            var jsonOut = [UInt8](jsonData)
-            jsonOut.append(10)
-            write(3, jsonOut, jsonOut.count)
-            fflush(stdout)
-            fflush(stderr)
+            _whisk_print_result(jsonData: jsonData)
         } catch let error as EncodingError {
             _whisk_print_error(message: "JSONEncoder failed to encode Codable type to JSON string:", error: error)
             return
