@@ -200,8 +200,6 @@ abstract class SwiftCodableActionContainerTests extends BasicActionRunnerTests w
     })
   }
 
-
-
   it should "support application errors" in {
     val (out, err) = withActionContainer() { c =>
       val code = """
