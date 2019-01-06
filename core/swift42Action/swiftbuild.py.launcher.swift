@@ -98,7 +98,7 @@ func _run_main<In: Decodable, Out: Encodable>(mainFunction: (In, @escaping (Out?
 }
 
 // Codable main signature no input
-func _run_main<Out: Encodable>(mainFunction: ( @escaping (Out?, Error?) -> Void) -> Void) {
+func _run_main<Out: Encodable>(mainFunction: ( @escaping (Out?, Error?) -> Void) -> Void, json: Data) {
     let resultHandler = { (out: Out?, error: Error?) in
         if let error = error {
             _whisk_print_error(message: "Action handler callback returned an error:", error: error)
