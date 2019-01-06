@@ -19,7 +19,7 @@ FROM openwhisk/actionloop as builder
 FROM swift:4.2
 
 RUN rm -rf /var/lib/apt/lists/* && apt-get clean && apt-get update \
-	&& apt-get install -y --no-install-recommends locales python3 \
+	&& apt-get install -y --no-install-recommends locales python3 vim \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& locale-gen en_US.UTF-8
 
