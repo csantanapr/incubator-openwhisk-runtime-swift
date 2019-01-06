@@ -35,6 +35,7 @@ COPY --from=builder /bin/proxy /bin/proxy
 ADD swiftbuild.py /bin/compile
 ADD swiftbuild.py.launcher.swift /bin/compile.launcher.swift
 COPY _Whisk.swift /swiftAction/
+COPY Package.swift /swiftAction/
 
 ENV OW_COMPILER=/bin/compile
 ENTRYPOINT [ "/bin/proxy" ]

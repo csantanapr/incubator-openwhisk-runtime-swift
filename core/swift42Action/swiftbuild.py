@@ -26,25 +26,6 @@ import codecs
 import subprocess
 from io import StringIO
 
-package_swift = """// swift-tools-version:4.2
-import PackageDescription
-
-let package = Package(
-    name: "Action",
-    products: [
-      .executable(
-        name: "Action",
-        targets:  ["Action"]
-      )
-    ],
-    targets: [
-      .target(
-        name: "Action",
-        path: "."
-      )
-    ]
-)
-"""
 output = StringIO()
 
 def eprint(*args, **kwargs):
@@ -53,9 +34,12 @@ def eprint(*args, **kwargs):
 def sources(launcher, source_dir, main):
     # create Packages.swift
     packagefile = "%s/Package.swift" % source_dir
+    origpackagefile = os.path.abspath("Package.swift")
     if not os.path.isfile(packagefile):
-        with codecs.open(packagefile, 'w', 'utf-8') as s:
-            s.write(package_swift)
+        with codecs.open(origpackagefile, 'r', 'utf-8') as s:
+            with codecs.open(packagefile, 'w', 'utf-8') as d:
+                body = s.read()
+                d.write(body)
 
     # create Sources/Action dir
     actiondir = "%s/Sources" % source_dir
