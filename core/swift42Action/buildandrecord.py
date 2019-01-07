@@ -58,7 +58,7 @@ if compileCommand is not None and linkCommand is not None:
     print("=========")
     print("Generated OpenWhisk Link command: %s" % linkCommand)
 
-    with open(GENERATED_BUILD_SCRIPT, "a") as buildScript:
+    with open(GENERATED_BUILD_SCRIPT, "w") as buildScript:
         buildScript.write("#!/bin/bash\n")
         buildScript.write("#date\n")
         buildScript.write("#echo \"Compiling\"\n")
