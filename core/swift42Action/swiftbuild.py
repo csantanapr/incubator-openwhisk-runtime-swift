@@ -26,44 +26,11 @@ import codecs
 import subprocess
 from io import StringIO
 
-output = StringIO()
-
 def eprint(*args, **kwargs):
-    print(*args, file=output, **kwargs)
+    print(*args, file=sys.stderr, **kwargs)
 
 def sources(launcher, source_dir, main):
-    # create Packages.swift
-    packagefile = "%s/Package.swift" % source_dir
-    origpackagefile = os.path.abspath("Package.swift")
-    if not os.path.isfile(packagefile):
-        with codecs.open(origpackagefile, 'r', 'utf-8') as s:
-            with codecs.open(packagefile, 'w', 'utf-8') as d:
-                body = s.read()
-                d.write(body)
-
-    # create Sources/Action dir
     actiondir = "%s/Sources" % source_dir
-    if not os.path.isdir(actiondir):
-        os.makedirs(actiondir, mode=0o755)
-
-    # Copy Whisk SDK
-    src = os.path.abspath("_Whisk.swift")
-    dst = "%s/_Whisk.swift" % actiondir
-    if os.path.isfile(src):
-        with codecs.open(src, 'r', 'utf-8') as s:
-            with codecs.open(dst, 'w', 'utf-8') as d:
-                body = s.read()
-                d.write(body)
-
-    # copy the single source file from exec to exec.swift
-    # also check if it has a main in it
-    src = "%s/exec" % source_dir
-    dst = "%s/main.swift" % actiondir
-    if os.path.isfile(src):
-        with codecs.open(src, 'r', 'utf-8') as s:
-            with codecs.open(dst, 'a', 'utf-8') as d:
-                body = s.read()
-                d.write(body)
     # copy the launcher fixing the main
     dst = "%s/main.swift" % actiondir
     with codecs.open(dst, 'a', 'utf-8') as d:
@@ -82,13 +49,12 @@ def sources(launcher, source_dir, main):
             code += "} \n"
             d.write(code)
 
-def swift_build(dir, extra_args=[]):
-    base_args =  ["swift", "build", "-c", "release"]
+def swift_build(dir, buildcmd):
     # compile...
     env = {
       "PATH": os.environ["PATH"]
     }
-    p = subprocess.Popen(base_args+extra_args,
+    p = subprocess.Popen(buildcmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=dir,
@@ -103,19 +69,20 @@ def swift_build(dir, extra_args=[]):
         e = e.decode('utf-8')
     return p.returncode, o, e
 
-def build(source_dir, target_file):
-    r, o, e = swift_build(source_dir)
-    if e: eprint(e)
-    if o: eprint(o)
+def build(source_dir, target_file, buildcmd):
+    r, o, e = swift_build(source_dir, buildcmd)
+    #if e: print(e)
+    #if o: print(o)
     if r != 0:
-        print(output.getvalue())
+        print(e)
+        print(o)
+        print(r)
         return
 
     bin_file = "%s/.build/release/Action" % source_dir
     os.rename(bin_file, target_file)
     if not os.path.isfile(target_file):
-        eprint("failed %s -> %s" % (bin_file, target_file))
-        print(output.getvalue())
+        print("failed %s -> %s" % (bin_file, target_file))
         return
 
 
@@ -128,8 +95,25 @@ def main(argv):
     source_dir = os.path.abspath(argv[2])
     target = os.path.abspath("%s/exec" % argv[3])
     launch = os.path.abspath(argv[0]+".launcher.swift")
-    sources(launch, source_dir, main)
-    build(source_dir, target)
+
+    src = "%s/exec" % source_dir
+
+    #check if single source
+    if os.path.isfile(src):
+        actiondir = os.path.abspath("Sources")
+        if not os.path.isdir(actiondir):
+            os.makedirs(actiondir, mode=0o755)
+        dst = "%s/main.swift" % actiondir
+        os.rename(src, dst)
+        sources(launch, os.path.abspath("."), main)
+        build(os.path.abspath("."), target, ["./swiftbuildandlink.sh"])
+    else:
+        actiondir = "%s/Sources" % source_dir
+        if not os.path.isdir(actiondir):
+            os.makedirs(actiondir, mode=0o755)
+        os.rename(os.path.abspath("Sources/_Whisk.swift"),"%s/Sources/_Whisk.swift" % source_dir)
+        sources(launch, source_dir, main)
+        build(source_dir, target, ["swift", "build", "-c", "release"])
 
 if __name__ == '__main__':
     main(sys.argv)
